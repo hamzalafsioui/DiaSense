@@ -1,0 +1,43 @@
+# Python environments and generated files
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Notebook and testing caches
+.ipynb_checkpoints/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Raw and generated datasets
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+
+# Local model files
+models/*
+!models/.gitkeep
+*.joblib
+*.pkl
+
+# Local MLflow storage and logs
+mlruns/
+mlartifacts/
+logs/
+*.db
+*.sqlite
+*.sqlite3
+
+# Operating-system files
+.DS_Store
+Thumbs.db
