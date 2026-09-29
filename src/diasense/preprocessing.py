@@ -28,3 +28,8 @@ def impute_knn(df:pd.DataFrame,n_neighbors:int = 5) ->tuple[pd.DataFrame,KNNImpu
     df_out = pd.DataFrame(impute_array,columns=df.columns,index=df.index)
 
     return df_out, imputer
+
+def save_artifact(object_to_save: object, filepath: str | Path):
+    filepath = Path(filepath)
+    filepath.parent.mkdir(parents=True,exist_ok=True)
+    joblib.dump(object_to_save,filepath)
