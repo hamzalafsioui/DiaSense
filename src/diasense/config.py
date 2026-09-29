@@ -10,6 +10,12 @@ RAW_DATA_DIR = DATA_DIR / "raw"
 PROCESSED_DATA_DIR = DATA_DIR / "processed"
 RAW_DATA_FILE = RAW_DATA_DIR / "dataset-diabete.csv"
 
+MODELS_DIR = PROJECT_ROOT / "models"
+NOTEBOOKS = PROJECT_ROOT / "notebooks"
+
+REPORTS_DIR = PROJECT_ROOT / "reports"
+FIGURES_DIR = REPORTS_DIR / "figures"
+
 
 CLINICAL_FEATURES = [
     "Pregnancies",
