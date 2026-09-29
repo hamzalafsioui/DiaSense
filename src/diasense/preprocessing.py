@@ -1,5 +1,10 @@
 import pandas as pd
 import numpy as np
+from sklearn.impute import KNNImputer
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
+import joblib
+from pathlib import Path
+
 from diasense.config import ZERO_AS_MISSING, CLINICAL_FEATURES, RANDOM_STATE
 
 
@@ -10,3 +15,16 @@ def replace_hiden_zeros(df:pd.DataFrame)->pd.DataFrame:
             df_out[col] = df_out.replace(0,np.mean)
 
     return df_out
+
+def impute_knn(df:pd.DataFrame,n_neighbors:int = 5) ->tuple[pd.DataFrame,KNNImputer]:
+    """
+        Take my DataFrame, use the 5 most similar observations to estimate missing values, convert the result back into a DataFrame, and give me both the completed data and the KNN imputer.
+    """
+
+    imputer = KNNImputer(n_neighbors=n_neighbors)
+
+    # KNNImputer returns a numpy array so we rebuild the dataframe
+    impute_array = imputer.fit_transform(df)
+    df_out = pd.DataFrame(impute_array,columns=df.columns,index=df.index)
+
+    return df_out, imputer
