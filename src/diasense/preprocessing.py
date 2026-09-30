@@ -29,6 +29,41 @@ def impute_knn(df:pd.DataFrame,n_neighbors:int = 5) ->tuple[pd.DataFrame,KNNImpu
 
     return df_out, imputer
 
+def detect_outliers_iqr(df:pd.DataFrame,columns:list[str])->pd.DataFrame:
+
+    outlier_mask = pd.DataFrame(False,index=df.index,columns=columns)
+
+    for col in columns:
+        Q1 = df[col].quantile(0.25)
+        Q3 = df[col].quantile(0.75)
+        IQR = Q3 -Q1
+
+        lower_bound = Q1 - 1.5 * IQR
+        upper_bound = Q3 + 1.5 * IQR
+
+        outlier_mask[col] = (df[col] < lower_bound) | (df[col] > upper_bound)
+
+
+    return outlier_mask
+
+def cap_outliers_iqr(df:pd.DataFrame,columns:list[str])->pd.DataFrame:
+
+    df_out = df.copy()
+
+    for col in columns:
+        Q1 = df_out[col].quantile(0.25)
+        Q3 = df_out[col].quantile(0.75)
+        IQR = Q3 -Q1
+
+        lower_bound = Q1 - 1.5 * IQR
+        upper_bound = Q3 + 1.5 * IQR
+
+        df_out[col] = np.clip(df_out[col],lower_bound,upper_bound)
+
+    return df_out
+
+
+
 def save_artifact(object_to_save: object, filepath: str | Path):
     filepath = Path(filepath)
     filepath.parent.mkdir(parents=True,exist_ok=True)
