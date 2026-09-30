@@ -62,6 +62,21 @@ def cap_outliers_iqr(df:pd.DataFrame,columns:list[str])->pd.DataFrame:
 
     return df_out
 
+def scale_data(df:pd.DataFrame,columns:list[str],method:str = "standard")->tuple[pd.DataFrame,object]:
+    df_out = df.copy()
+
+    if method == "standard":
+        scaler = StandardScaler()
+    elif method == "minmax":
+        scaler = MinMaxScaler()
+    else:
+        raise ValueError("method must be standard | minmax")
+
+    df_out[columns] = scaler.fit_transform(df_out[columns])
+
+    return df_out,scaler
+
+
 
 
 def save_artifact(object_to_save: object, filepath: str | Path):
