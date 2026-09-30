@@ -28,6 +28,15 @@ CLINICAL_FEATURES = [
     "Age",
 ]
 
+OUTLIER_COLUMNS = [
+    "Glucose",
+    "BloodPressure",
+    "SkinThickness",
+    "Insulin",
+    "BMI",
+    "DiabetesPedigreeFunction",
+]
+
 # 0 in this columns means not measured so not a real value
 ZERO_AS_MISSING = [
     "Glucose",
