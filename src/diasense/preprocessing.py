@@ -1,85 +1,136 @@
-import pandas as pd
-import numpy as np
-from sklearn.impute import KNNImputer
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
-import joblib
+from __future__ import annotations
+
 from pathlib import Path
 
-from diasense.config import ZERO_AS_MISSING, CLINICAL_FEATURES, RANDOM_STATE
+import joblib
+import numpy as np
+import pandas as pd
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.impute import KNNImputer
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+
+from diasense.config import CLIP_Z_THRESHOLD, KNN_NEIGHBORS, ZERO_AS_MISSING
 
 
-def replace_hidden_zeros(df:pd.DataFrame)->pd.DataFrame:
-    df_out = df.copy()
-    for col in ZERO_AS_MISSING:
-        if col in df_out.columns:
-            df_out[col] = df_out[col].replace(0,np.nan)
+class HiddenZeroToNaN(BaseEstimator, TransformerMixin):
+    
+    def __init__(self, columns: list[str]):
+        self.columns = columns
 
-    return df_out
+    def fit(self, X: pd.DataFrame, y=None):
+        if not isinstance(X, pd.DataFrame):
+            raise TypeError(f"{self.__class__.__name__} expects a DataFrame.")
+        return self
 
-def impute_knn(df:pd.DataFrame,n_neighbors:int = 5) ->tuple[pd.DataFrame,KNNImputer]:
-    """
-        Take my DataFrame, use the 5 most similar observations to estimate missing values, convert the result back into a DataFrame, and give me both the completed data and the KNN imputer.
-    """
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        X = X.copy()
+        for col in self.columns:
+            if col in X.columns:
+                X[col] = X[col].replace(0, np.nan)
+        return X
 
-    imputer = KNNImputer(n_neighbors=n_neighbors)
 
-    # KNNImputer returns a numpy array so we rebuild the dataframe
-    impute_array = imputer.fit_transform(df)
-    df_out = pd.DataFrame(impute_array,columns=df.columns,index=df.index)
+class FrameStandardScaler(BaseEstimator, TransformerMixin):
+   
 
-    return df_out, imputer
+    def fit(self, X: pd.DataFrame, y=None):
+        self.feature_names_in_ = list(X.columns)
+        self.scaler_ = StandardScaler().fit(X, y)
+        return self
 
-def detect_outliers_iqr(df:pd.DataFrame,columns:list[str])->pd.DataFrame:
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        array = self.scaler_.transform(X)
+        return pd.DataFrame(array, columns=self.feature_names_in_, index=X.index)
 
-    outlier_mask = pd.DataFrame(False,index=df.index,columns=columns)
 
+class OutlierCapper(BaseEstimator, TransformerMixin):
+    
+    def __init__(self, z_threshold: float = 3.0):
+        self.z_threshold = z_threshold
+
+    def fit(self, X: pd.DataFrame, y=None):
+        self.feature_names_in_ = list(X.columns)
+        self.lower_bounds_ = X.mean() - self.z_threshold * X.std()
+        self.upper_bounds_ = X.mean() + self.z_threshold * X.std()
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        X = X.copy()
+        for col in self.feature_names_in_:
+            X[col] = X[col].clip(
+                lower=self.lower_bounds_[col], upper=self.upper_bounds_[col]
+            )
+        return X
+
+
+class FrameKNNImputer(BaseEstimator, TransformerMixin):
+    """KNNImputer that accepts and returns DataFrames."""
+
+    def __init__(self, n_neighbors: int = 5):
+        self.n_neighbors = n_neighbors
+
+    def fit(self, X: pd.DataFrame, y=None):
+        self.feature_names_in_ = list(X.columns)
+        self.imputer_ = KNNImputer(n_neighbors=self.n_neighbors).fit(X, y)
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        array = self.imputer_.transform(X)
+        return pd.DataFrame(array, columns=self.feature_names_in_, index=X.index)
+
+
+class ColumnSelector(BaseEstimator, TransformerMixin):
+    
+    def __init__(self, columns: list[str]):
+        self.columns = columns
+
+    def fit(self, X: pd.DataFrame, y=None):
+        missing = [c for c in self.columns if c not in X.columns]
+        if missing:
+            raise ValueError(f"Columns not found in input data: {missing}")
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        return X[self.columns].copy()
+
+
+
+def build_preprocessing_pipeline(
+    n_neighbors: int = KNN_NEIGHBORS,
+    z_threshold: float = CLIP_Z_THRESHOLD,
+) -> Pipeline:
+    
+    return Pipeline(
+        steps=[
+            ("zero_to_nan", HiddenZeroToNaN(columns=ZERO_AS_MISSING)),
+            ("scaler", FrameStandardScaler()),
+            ("capper", OutlierCapper(z_threshold=z_threshold)),
+            ("imputer", FrameKNNImputer(n_neighbors=n_neighbors)),
+        ]
+    )
+
+
+def detect_outliers_iqr(df: pd.DataFrame, columns: list[str]) -> pd.Series:
+    
+    counts = {}
     for col in columns:
-        Q1 = df[col].quantile(0.25)
-        Q3 = df[col].quantile(0.75)
-        IQR = Q3 -Q1
-
-        lower_bound = Q1 - 1.5 * IQR
-        upper_bound = Q3 + 1.5 * IQR
-
-        outlier_mask[col] = (df[col] < lower_bound) | (df[col] > upper_bound)
+        q1, q3 = df[col].quantile([0.25, 0.75])
+        iqr = q3 - q1
+        counts[col] = int(((df[col] < q1 - 1.5 * iqr) | (df[col] > q3 + 1.5 * iqr)).sum())
+    return pd.Series(counts, name="iqr_outliers")
 
 
-    return outlier_mask
-
-def cap_outliers_iqr(df:pd.DataFrame,columns:list[str])->pd.DataFrame:
-
-    df_out = df.copy()
-
-    for col in columns:
-        Q1 = df_out[col].quantile(0.25)
-        Q3 = df_out[col].quantile(0.75)
-        IQR = Q3 -Q1
-
-        lower_bound = Q1 - 1.5 * IQR
-        upper_bound = Q3 + 1.5 * IQR
-
-        df_out[col] = np.clip(df_out[col],lower_bound,upper_bound)
-
-    return df_out
-
-def scale_data(df:pd.DataFrame,columns:list[str],method:str = "standard")->tuple[pd.DataFrame,object]:
-    df_out = df.copy()
-
-    if method == "standard":
-        scaler = StandardScaler()
-    elif method == "minmax":
-        scaler = MinMaxScaler()
-    else:
-        raise ValueError("method must be standard | minmax")
-
-    df_out[columns] = scaler.fit_transform(df_out[columns])
-
-    return df_out,scaler
+def inverse_scale(pipe: Pipeline, df_scaled: pd.DataFrame) -> pd.DataFrame:
+   
+    scaler = pipe.named_steps["scaler"].scaler_
+    return pd.DataFrame(
+        scaler.inverse_transform(df_scaled), columns=df_scaled.columns, index=df_scaled.index
+    )
 
 
-
-
-def save_artifact(object_to_save: object, filepath: str | Path):
+def save_artifact(obj: object, filepath: str | Path) -> None:
+    
     filepath = Path(filepath)
-    filepath.parent.mkdir(parents=True,exist_ok=True)
-    joblib.dump(object_to_save,filepath)
+    filepath.parent.mkdir(parents=True, exist_ok=True)
+    joblib.dump(obj, filepath)
