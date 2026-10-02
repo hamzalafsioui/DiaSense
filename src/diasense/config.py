@@ -52,3 +52,10 @@ RISK_COLUMN = "risk_category"
 RANDOM_STATE = 42
 TEST_SIZE = 0.2
 
+
+
+
+KNN_NEIGHBORS = 5
+CLIP_Z_THRESHOLD = 3.0
+CLUSTERING_FEATURES = ["Glucose", "BMI", "DiabetesPedigreeFunction"]
+KMEANS_K = 2
