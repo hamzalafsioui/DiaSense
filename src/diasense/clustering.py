@@ -34,3 +34,17 @@ def evaluate_k(
 
     return pd.DataFrame(results)
 
+
+def fit_kmeans(
+    X: pd.DataFrame,
+    k: int,
+    random_state: int = RANDOM_STATE,
+) -> KMeans:
+    
+    model = KMeans(
+        n_clusters=k,
+        n_init=20,
+        random_state=random_state,
+    )
+    model.fit(X)
+    return model
