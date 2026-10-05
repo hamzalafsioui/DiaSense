@@ -52,7 +52,13 @@ RISK_COLUMN = "risk_category"
 RANDOM_STATE = 42
 TEST_SIZE = 0.2
 
+CLINICAL_THRESHOLDS = {
+    "Glucose": 126.0,
+    "BMI": 30.0,
+    "DiabetesPedigreeFunction": 0.5,
+}
 
+K_RANGE = range(2, 11)
 
 
 KNN_NEIGHBORS = 5
