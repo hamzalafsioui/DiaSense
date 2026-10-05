@@ -65,3 +65,8 @@ KNN_NEIGHBORS = 5
 CLIP_Z_THRESHOLD = 3.0
 CLUSTERING_FEATURES = ["Glucose", "BMI", "DiabetesPedigreeFunction"]
 KMEANS_K = 2
+
+RISK_LABELS = {
+    0: "Low Risk",
+    1: "High Risk",
+}
