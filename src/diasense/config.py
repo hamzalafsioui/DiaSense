@@ -16,6 +16,8 @@ NOTEBOOKS = PROJECT_ROOT / "notebooks"
 REPORTS_DIR = PROJECT_ROOT / "reports"
 FIGURES_DIR = REPORTS_DIR / "figures"
 
+METRICS_DIR = REPORTS_DIR / "metrics"
+
 
 CLINICAL_FEATURES = [
     "Pregnancies",
@@ -70,3 +72,19 @@ RISK_LABELS = {
     0: "Low Risk",
     1: "High Risk",
 }
+
+
+# Artifact file paths 
+CLUSTER_PIPELINE_FILE = MODELS_DIR / "cluster_input_pipeline.joblib"
+KMEANS_MODEL_FILE = MODELS_DIR / "kmeans_model.joblib"
+RISK_MAPPING_FILE = MODELS_DIR / "risk_mapping.json"
+CLASSIFICATION_PIPELINE_FILE = MODELS_DIR / "classification_pipeline.joblib"
+CLASSIFICATION_RESULTS_FILE = METRICS_DIR / "classification_results.json"
+LABELED_DATA_FILE = PROCESSED_DATA_DIR / "dataset_labeled.csv"
+
+# MLflow
+MLFLOW_TRACKING_URI       = os.getenv("MLFLOW_TRACKING_URI",       "http://mlflow:5000")
+MLFLOW_EXPERIMENT_NAME    = os.getenv("MLFLOW_EXPERIMENT_NAME",    "DiaSense_Diabetes_Risk_Prediction")
+MLFLOW_REGISTERED_MODEL_NAME = os.getenv("MLFLOW_REGISTERED_MODEL_NAME", "DiaSense_Risk_Classifier")
+MLFLOW_MODEL_ALIAS        = os.getenv("MLFLOW_MODEL_ALIAS",        "production")
+MLFLOW_PROJECT_TAG        = os.getenv("MLFLOW_PROJECT_TAG",        "DiaSense")
