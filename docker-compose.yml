@@ -63,5 +63,28 @@ services:
       - ./models:/app/models
       - ./reports:/app/reports
       - ./src:/app/src:ro
+
+  streamlit:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.streamlit
+
+    depends_on:
+      mlflow:
+        condition: service_healthy
+
+    environment:
+      # Use the service name so the container can reach the MLflow server
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MLFLOW_REGISTERED_MODEL_NAME: DiaSense_Risk_Classifier
+      MLFLOW_MODEL_ALIAS: production
+
+    ports:
+      - "127.0.0.1:8501:8501"
+
+    volumes:
+      # Mount src so code changes don't require a rebuild
+      - ./src:/app/src:ro
+
 volumes:
   mlflow_storage:
