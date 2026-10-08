@@ -86,5 +86,26 @@ services:
       # Mount src so code changes don't require a rebuild
       - ./src:/app/src:ro
 
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+
+    depends_on:
+      mlflow:
+        condition: service_healthy
+
+    environment:
+      # Use the service name so the container can reach the MLflow server
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MLFLOW_REGISTERED_MODEL_NAME: DiaSense_Risk_Classifier
+      MLFLOW_MODEL_ALIAS: production
+
+    ports:
+      - "127.0.0.1:8000:8000"
+
+    volumes:
+      - ./src:/app/src:ro
+
 volumes:
   mlflow_storage:
