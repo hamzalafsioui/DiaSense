@@ -1,0 +1,28 @@
+FROM python:3.12-slim
+
+ARG MLFLOW_VERSION=3.17.0
+
+ENV PYTHONUNBUFFERED=1 \
+    MPLBACKEND=Agg \
+    PIP_DEFAULT_TIMEOUT=120 \
+    PIP_RETRIES=5
+
+WORKDIR /app
+
+# Copy dependency files first (layer-cache friendly)
+COPY requirements.txt pyproject.toml ./
+COPY src ./src
+
+RUN pip install --no-cache-dir --upgrade pip
+
+# Install heavy deps first so they are cached independently
+RUN pip install --no-cache-dir numpy pandas scikit-learn matplotlib seaborn
+
+# Install the rest of the project requirements
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install diasense package in editable mode (no extra deps)
+RUN pip install --no-cache-dir --no-deps -e .
+
+# Execute tracking script as a module
+CMD ["python", "-m", "diasense.mlflow_tracking"]

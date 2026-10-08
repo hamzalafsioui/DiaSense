@@ -1,0 +1,18 @@
+﻿FROM python:3.12-slim
+
+ARG MLFLOW_VERSION=3.17.0
+
+ENV PYTHONUNBUFFERED=1 \
+    PIP_DEFAULT_TIMEOUT=120 \
+    PIP_RETRIES=5
+
+RUN pip install --no-cache-dir --upgrade pip
+
+RUN pip install --no-cache-dir "mlflow[skinny]==${MLFLOW_VERSION}"
+
+# Storage directories for DB and artifacts
+RUN mkdir -p /mlflow/artifacts
+
+EXPOSE 5000
+
+CMD ["mlflow", "server"]

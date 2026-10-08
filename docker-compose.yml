@@ -1,0 +1,67 @@
+services:
+  mlflow:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.mlflow
+      args:
+        MLFLOW_VERSION: ${MLFLOW_VERSION:-3.17.0}
+
+    command:
+      - mlflow
+      - server
+      - --backend-store-uri
+      - sqlite:////mlflow/mlflow.db
+      - --serve-artifacts
+      - --artifacts-destination
+      - /mlflow/artifacts
+      - --default-artifact-root
+      - "mlflow-artifacts:/"
+      - --host
+      - 0.0.0.0
+      - --port
+      - "5000"
+
+    environment:
+      # Allows the tracker container to reach the server using "mlflow".
+      MLFLOW_SERVER_ALLOWED_HOSTS: "localhost:5000,localhost,127.0.0.1:5000,mlflow:5000,mlflow"
+
+    ports:
+      - "127.0.0.1:5000:5000"
+
+    volumes:
+      - mlflow_storage:/mlflow
+
+    healthcheck:
+      # MLflow 3.x exposes GET /health → returns 200 when ready
+      test: ["CMD", "python", "-c",
+             "import urllib.request, sys; r=urllib.request.urlopen('http://127.0.0.1:5000/health', timeout=4); sys.exit(0 if r.status==200 else 1)"]
+      interval: 15s
+      timeout: 6s
+      retries: 10
+      start_period: 10s
+
+  tracker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.tracker
+      args:
+        MLFLOW_VERSION: ${MLFLOW_VERSION:-3.17.0}
+
+    depends_on:
+      mlflow:
+        condition: service_healthy
+
+    environment:
+      # Inside Docker, use the service name—not localhost.
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MLFLOW_EXPERIMENT_NAME: DiaSense_Diabetes_Risk_Prediction
+      MLFLOW_REGISTERED_MODEL_NAME: DiaSense_Risk_Classifier
+      MLFLOW_MODEL_ALIAS: candidate
+
+    volumes:
+      - ./data:/app/data:ro
+      - ./models:/app/models
+      - ./reports:/app/reports
+      - ./src:/app/src:ro
+volumes:
+  mlflow_storage:
