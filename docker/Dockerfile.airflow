@@ -1,0 +1,23 @@
+FROM apache/airflow:2.9.2-python3.12
+
+# Root user to install any necessary OS packages (if needed later)
+USER root
+
+# Switch back to airflow user for pip installations
+USER airflow
+
+# Copy requirements
+COPY requirements.txt /requirements.txt
+
+# Install ML project dependencies
+RUN pip install --no-cache-dir --upgrade pip
+RUN pip install --no-cache-dir numpy pandas scikit-learn
+RUN pip install --no-cache-dir -r /requirements.txt
+
+# Copy source code and install the diasense package
+COPY --chown=airflow:root pyproject.toml /opt/airflow/pyproject.toml
+COPY --chown=airflow:root src /opt/airflow/src
+RUN pip install --no-cache-dir -e /opt/airflow
+
+# Airflow webserver port
+EXPOSE 8080
