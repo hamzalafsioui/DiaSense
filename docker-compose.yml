@@ -85,6 +85,7 @@ services:
     volumes:
       # Mount src so code changes don't require a rebuild
       - ./src:/app/src:ro
+      - ./models:/app/models:ro
 
   api:
     build:
@@ -106,6 +107,42 @@ services:
 
     volumes:
       - ./src:/app/src:ro
+      - ./models:/app/models:ro
+
+  airflow:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.airflow
+      
+    depends_on:
+      mlflow:
+        condition: service_healthy
+        
+    environment:
+      # Keep Airflow UI clean from default examples
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      
+      # Database connection (SQLite is fine for local dev)
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "sqlite:////opt/airflow/airflow.db"
+      
+      # Allow code in /src to reach the MLflow server via 'mlflow'
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MLFLOW_EXPERIMENT_NAME: DiaSense_Diabetes_Risk_Prediction
+      MLFLOW_REGISTERED_MODEL_NAME: DiaSense_Risk_Classifier
+      MLFLOW_MODEL_ALIAS: production
+      
+    ports:
+      - "127.0.0.1:8080:8080"
+      
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./data:/opt/airflow/data
+      - ./models:/opt/airflow/models
+      - ./reports:/opt/airflow/reports
+      - ./src:/opt/airflow/src:ro
+      
+    # 'standalone' runs the webserver, scheduler, and database init all in one container!
+    command: standalone
 
 volumes:
   mlflow_storage:
