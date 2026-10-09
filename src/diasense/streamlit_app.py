@@ -9,7 +9,9 @@ from diasense.config import (
     MLFLOW_MODEL_ALIAS,
     MLFLOW_REGISTERED_MODEL_NAME,
     MLFLOW_TRACKING_URI,
+    RISK_MAPPING_FILE,
 )
+from diasense.risk import load_risk_mapping
 
 # Page configuration
 st.set_page_config(
@@ -31,9 +33,9 @@ def load_model():
 
 # Risk result display
 def show_result(prediction: int):
-    
-
-    is_high_risk = prediction == 1
+    risk_mapping = load_risk_mapping(RISK_MAPPING_FILE)
+    category = risk_mapping.get(prediction, "Unknown")
+    is_high_risk = category == "High Risk"
 
     # --- Risk badge ---
     if is_high_risk:
