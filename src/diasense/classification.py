@@ -158,7 +158,7 @@ def tune_model(
         param_grid=param_grid,
         cv=cv,
         scoring=scoring,
-        n_jobs=-1,   
+        n_jobs=1,   
         refit=True,
         verbose=0,
     )
