@@ -25,10 +25,3 @@ pydantic==2.9.2
 pydantic-settings==2.5.2
 python-dotenv==1.0.1
 
-# Notebooks
-jupyterlab==4.2.5
-ipykernel==6.29.5
-
-# Testing
-pytest==8.3.3
-

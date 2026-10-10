@@ -10,14 +10,13 @@ USER airflow
 COPY requirements.txt /requirements.txt
 
 # Install ML project dependencies
-RUN pip install --no-cache-dir --upgrade pip
-RUN pip install --no-cache-dir numpy pandas scikit-learn
-RUN pip install --no-cache-dir -r /requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r /requirements.txt
 
 # Copy source code and install the diasense package
 COPY --chown=airflow:root pyproject.toml /opt/airflow/pyproject.toml
 COPY --chown=airflow:root src /opt/airflow/src
-RUN pip install --no-cache-dir -e /opt/airflow
+RUN pip install --no-cache-dir --no-deps -e /opt/airflow
 
 # Airflow webserver port
 EXPOSE 8080

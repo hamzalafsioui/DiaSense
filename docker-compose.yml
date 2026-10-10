@@ -125,6 +125,9 @@ services:
       # Database connection (SQLite is fine for local dev)
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "sqlite:////opt/airflow/airflow.db"
       
+      # Prevent joblib multiprocessing crashes inside Airflow tasks
+      JOBLIB_MULTIPROCESSING: "0"
+      
       # Allow code in /src to reach the MLflow server via 'mlflow'
       MLFLOW_TRACKING_URI: http://mlflow:5000
       MLFLOW_EXPERIMENT_NAME: DiaSense_Diabetes_Risk_Prediction

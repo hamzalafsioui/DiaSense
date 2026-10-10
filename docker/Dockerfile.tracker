@@ -11,15 +11,12 @@ WORKDIR /app
 
 # Copy dependency files first (layer-cache friendly)
 COPY requirements.txt pyproject.toml ./
-COPY src ./src
 
 RUN pip install --no-cache-dir --upgrade pip
-
-# Install heavy deps first so they are cached independently
-RUN pip install --no-cache-dir numpy pandas scikit-learn matplotlib seaborn
-
-# Install the rest of the project requirements
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy source code after dependencies are installed
+COPY src ./src
 
 # Install diasense package in editable mode (no extra deps)
 RUN pip install --no-cache-dir --no-deps -e .
