@@ -43,14 +43,29 @@ def _log_confusion_matrix(y_test, y_pred, model_name: str):
     ConfusionMatrixDisplay.from_predictions(y_test, y_pred, ax=ax, cmap="Blues")
     ax.set_title(f"Confusion Matrix | {model_name}")
 
-    # Save to reports/figures/
     safe_name = model_name.replace(" ", "_")
     fig_path = REPORTS_DIR / "figures" / f"confusion_matrix_{safe_name}.png"
-    fig_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(fig_path, bbox_inches="tight")
-    plt.close(fig)
+    
+    # Save locally if possible (unlink first to avoid root ownership conflicts)
+    try:
+        fig_path.parent.mkdir(parents=True, exist_ok=True)
+        if fig_path.exists():
+            try:
+                fig_path.unlink()
+            except OSError:
+                pass
+        fig.savefig(fig_path, bbox_inches="tight")
+    except Exception as e:
+        print(f"  Warning: could not save local confusion matrix figure: {e}")
 
-    mlflow.log_artifact(str(fig_path), artifact_path="plots")
+    # Log figure directly to MLflow (in-memory)
+    try:
+        mlflow.log_figure(fig, f"plots/confusion_matrix_{safe_name}.png")
+    except Exception:
+        if fig_path.exists():
+            mlflow.log_artifact(str(fig_path), artifact_path="plots")
+
+    plt.close(fig)
 
 
 # Run 1 | Clustering
